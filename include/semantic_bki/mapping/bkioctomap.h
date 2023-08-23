@@ -257,12 +257,16 @@ namespace semantic_bki {
             LeafIterator &operator++() {
                 ++leaf_it;
                 if (leaf_it == end_leaf) {
-                    ++block_it;
                     if (block_it != end_block) {
-                        leaf_it = block_it->second->begin_leaf();
-                        end_leaf = block_it->second->end_leaf();
+                        ++block_it;
+                        if (block_it != end_block) {
+                            leaf_it = block_it->second->begin_leaf();
+                            end_leaf = block_it->second->end_leaf();
+                        }
                     }
                 }
+
+                return *this;
             }
 
             SemanticOcTreeNode &operator*() const {
