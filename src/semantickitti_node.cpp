@@ -2,8 +2,6 @@
 #include <iostream>
 #include <ros/ros.h>
 
-#include "bkioctomap.h"
-#include "markerarray_pub.h"
 #include "semantickitti_util.h"
 
 int main(int argc, char **argv) {

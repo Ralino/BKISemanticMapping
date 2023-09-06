@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(semantic_bki)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -o3")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -o3")
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -25,11 +25,14 @@ add_definitions(-DOPENMP)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
         geometry_msgs
+        sensor_msgs
         visualization_msgs
         nav_msgs
         pcl_ros
         roscpp
         tf_conversions
+        tf2
+        tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -156,6 +159,12 @@ add_executable(semantickitti_node
   src/semantickitti_node.cpp
 )
 
+add_executable(online_mapping_node
+  ${MAPPING_SOURCE_FILES}
+  ${COMMON_SOURCE_FILES}
+  src/online_mapping_node.cpp
+)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(BGKOctoMap_node BGKOctoMap_generate_messages_cpp)
@@ -172,6 +181,11 @@ target_link_libraries(kitti_node
 )
 
 target_link_libraries(semantickitti_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+target_link_libraries(online_mapping_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )

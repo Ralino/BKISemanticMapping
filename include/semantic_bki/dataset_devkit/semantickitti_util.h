@@ -1,5 +1,7 @@
 #pragma once
 
+#include "bkioctomap.h"
+#include "markerarray_pub.h"
 #include <fstream>
 
 #include <ros/ros.h>
