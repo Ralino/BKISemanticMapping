@@ -46,65 +46,66 @@ namespace semantic_bki {
         }
 
        
-      void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
-          assert(xs.size() % dim == 0);
-          MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
-          assert(trained == true);
-          MatrixKType Ks;
+        void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
+            assert(xs.size() % dim == 0);
+            MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
+            assert(trained == true);
+            MatrixKType Ks;
 
-          covSparse(_xs, x, Ks);
-          
-          ybars.resize(_xs.rows());
-          for (int r = 0; r < _xs.rows(); ++r)
-            ybars[r].resize(nc);
+            // _xs: leafs, x: new laser points
+            covSparse(_xs, x, Ks);
 
-            MatrixYType _y_vec = Eigen::Map<const MatrixYType>(y_vec.data(), y_vec.size(), 1);
-            for (int k = 0; k < nc; ++k) {
-              for (int i = 0; i < y_vec.size(); ++i) {
-                if (y_vec[i] == k)
-                  _y_vec(i, 0) = 1;
-                else
-                  _y_vec(i, 0) = 0;
-              }
-            
-            MatrixYType _ybar;
-            _ybar = (Ks * _y_vec);
-            
-            for (int r = 0; r < _ybar.rows(); ++r)
-              ybars[r][k] = _ybar(r, 0);
-          }
-      }
-
-      void predict_csm(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
-          assert(xs.size() % dim == 0);
-          MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
-          assert(trained == true);
-          MatrixKType Ks;
-
-          covCountingSensorModel(_xs, x, Ks);
-          
-          ybars.resize(_xs.rows());
-          for (int r = 0; r < _xs.rows(); ++r)
-            ybars[r].resize(nc);
+            ybars.resize(_xs.rows());
+            for (int r = 0; r < _xs.rows(); ++r)
+                ybars[r].resize(nc);
 
             MatrixYType _y_vec = Eigen::Map<const MatrixYType>(y_vec.data(), y_vec.size(), 1);
             for (int k = 0; k < nc; ++k) {
-              for (int i = 0; i < y_vec.size(); ++i) {
-                if (y_vec[i] == k)
-                  _y_vec(i, 0) = 1;
-                else
-                  _y_vec(i, 0) = 0;
-              }
-            
-            MatrixYType _ybar;
-            _ybar = (Ks * _y_vec);
-            
-            for (int r = 0; r < _ybar.rows(); ++r)
-              ybars[r][k] = _ybar(r, 0);
-          }
-      }
+                for (int i = 0; i < y_vec.size(); ++i) {
+                    if (y_vec[i] == k)
+                        _y_vec(i, 0) = 1;
+                    else
+                        _y_vec(i, 0) = 0;
+                }
 
-        
+                MatrixYType _ybar;
+                _ybar = (Ks * _y_vec);
+
+                for (int r = 0; r < _ybar.rows(); ++r)
+                    ybars[r][k] = _ybar(r, 0);
+            }
+        }
+
+        void predict_csm(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
+            assert(xs.size() % dim == 0);
+            MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
+            assert(trained == true);
+            MatrixKType Ks;
+
+            covCountingSensorModel(_xs, x, Ks);
+
+            ybars.resize(_xs.rows());
+            for (int r = 0; r < _xs.rows(); ++r)
+                ybars[r].resize(nc);
+
+            MatrixYType _y_vec = Eigen::Map<const MatrixYType>(y_vec.data(), y_vec.size(), 1);
+            for (int k = 0; k < nc; ++k) {
+                for (int i = 0; i < y_vec.size(); ++i) {
+                    if (y_vec[i] == k)
+                        _y_vec(i, 0) = 1;
+                    else
+                        _y_vec(i, 0) = 0;
+                }
+
+                MatrixYType _ybar;
+                _ybar = (Ks * _y_vec);
+
+                for (int r = 0; r < _ybar.rows(); ++r)
+                    ybars[r][k] = _ybar(r, 0);
+            }
+        }
+
+
     private:
         /*
          * @brief Compute Euclid distances between two vectors.

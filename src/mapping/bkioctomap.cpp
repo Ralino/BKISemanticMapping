@@ -122,16 +122,12 @@ namespace semantic_bki {
         /////////////////////////////////////////////////
         vector<BlockHashKey> test_blocks;
         std::unordered_map<BlockHashKey, SemanticBKI3f *> bgk_arr;
-#ifdef OPENMP
 #pragma omp parallel for schedule(dynamic)
-#endif
         for (int i = 0; i < blocks.size(); ++i) {
             BlockHashKey key = blocks[i];
             ExtendedBlock eblock = get_extended_block(key);
             if (has_gp_points_in_bbox(eblock))
-#ifdef OPENMP
 #pragma omp critical
-#endif
             {
                 test_blocks.push_back(key);
             };
@@ -154,9 +150,7 @@ namespace semantic_bki {
 
             SemanticBKI3f *bgk = new SemanticBKI3f(SemanticOcTreeNode::num_class, SemanticOcTreeNode::sf2, SemanticOcTreeNode::ell);
             bgk->train(block_x, block_y);
-#ifdef OPENMP
 #pragma omp critical
-#endif
             {
                 bgk_arr.emplace(key, bgk);
             };
@@ -169,14 +163,10 @@ namespace semantic_bki {
 
         ////////// Prediction ///////////////////////////
         /////////////////////////////////////////////////
-#ifdef OPENMP
 #pragma omp parallel for schedule(dynamic)
-#endif
         for (int i = 0; i < test_blocks.size(); ++i) {
             BlockHashKey key = test_blocks[i];
-#ifdef OPENMP
 #pragma omp critical
-#endif
             {
                 if (block_arr.find(key) == block_arr.end())
                     block_arr.emplace(key, new Block(hash_key_to_block(key)));
@@ -223,7 +213,6 @@ namespace semantic_bki {
 
     void SemanticBKIOctoMap::insert_pointcloud(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,
                                       float free_res, float max_range) {
-
 #ifdef DEBUG
         Debug_Msg("Insert pointcloud: " << "cloud size: " << cloud.size() << " origin: " << origin);
 #endif
@@ -244,9 +233,11 @@ namespace semantic_bki {
         point3f lim_min, lim_max;
         bbox(xy, lim_min, lim_max);
 
+        // all blocks
         vector<BlockHashKey> blocks;
         get_blocks_in_bbox(lim_min, lim_max, blocks);
 
+        // FIXME no need for rtree, instead place points directly in hash grid map (SemanticBKI3f)
         for (auto it = xy.cbegin(); it != xy.cend(); ++it) {
             float p[] = {it->first.x(), it->first.y(), it->first.z()};
             rtree.Insert(p, p, const_cast<GPPointType *>(&*it));
@@ -255,43 +246,39 @@ namespace semantic_bki {
 
         ////////// Training /////////////////////////////
         /////////////////////////////////////////////////
+ 
+        // all blocks with points in them and their direct neighbors
         vector<BlockHashKey> test_blocks;
         std::unordered_map<BlockHashKey, SemanticBKI3f *> bgk_arr;
-#ifdef OPENMP
 #pragma omp parallel for schedule(dynamic)
-#endif
         for (int i = 0; i < blocks.size(); ++i) {
             BlockHashKey key = blocks[i];
             ExtendedBlock eblock = get_extended_block(key);
-            if (has_gp_points_in_bbox(eblock))
-#ifdef OPENMP
+            if (has_gp_points_in_bbox(eblock)) {
 #pragma omp critical
-#endif
-            {
                 test_blocks.push_back(key);
             };
 
+            // this section can be replaced by simply iterating over xy and placing them into their corresponding block in bgk_arr
             GPPointCloud block_xy;
             get_gp_points_in_bbox(key, block_xy);
             if (block_xy.size() < 1)
                 continue;
 
-            vector<float> block_x, block_y;
+            // all positions of the points in that block
+            vector<float> block_x;
+            // all labels of the points in that block
+            vector <float> block_y;
             for (auto it = block_xy.cbegin(); it != block_xy.cend(); ++it) {
                 block_x.push_back(it->first.x());
                 block_x.push_back(it->first.y());
                 block_x.push_back(it->first.z());
                 block_y.push_back(it->second);
-            
-            
-            //std::cout << search(it->first.x(), it->first.y(), it->first.z()) << std::endl;
             }
 
             SemanticBKI3f *bgk = new SemanticBKI3f(SemanticOcTreeNode::num_class, SemanticOcTreeNode::sf2, SemanticOcTreeNode::ell);
-            bgk->train(block_x, block_y);
-#ifdef OPENMP
+            bgk->train(block_x, block_y); // simple copy, no training involved
 #pragma omp critical
-#endif
             {
                 bgk_arr.emplace(key, bgk);
             };
@@ -304,20 +291,19 @@ namespace semantic_bki {
 
         ////////// Prediction ///////////////////////////
         /////////////////////////////////////////////////
-#ifdef OPENMP
+
 #pragma omp parallel for schedule(dynamic)
-#endif
         for (int i = 0; i < test_blocks.size(); ++i) {
             BlockHashKey key = test_blocks[i];
-#ifdef OPENMP
 #pragma omp critical
-#endif
             {
-                if (block_arr.find(key) == block_arr.end())
+                if (block_arr.find(key) == block_arr.end()) {
                     block_arr.emplace(key, new Block(hash_key_to_block(key)));
+                }
             };
             Block *block = block_arr[key];
             vector<float> xs;
+            // treat leaf as point for old points
             for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it) {
                 point3f p = block->get_loc(leaf_it);
                 xs.push_back(p.x());
@@ -326,6 +312,7 @@ namespace semantic_bki {
             }
             //std::cout << "xs size: "<<xs.size() << std::endl;
 
+            // for all bgk inference blocks in the extended block, do a prediction (for each test block?)
             ExtendedBlock eblock = block->get_extended_block();
             for (auto block_it = eblock.cbegin(); block_it != eblock.cend(); ++block_it) {
                 auto bgk = bgk_arr.find(*block_it);
@@ -333,7 +320,7 @@ namespace semantic_bki {
                     continue;
 
                	vector<vector<float>> ybars;
-		            bgk->second->predict(xs, ybars);
+                bgk->second->predict(xs, ybars);
 
                 int j = 0;
                 for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it, ++j) {
@@ -371,8 +358,13 @@ namespace semantic_bki {
         }
     }
 
+    /**
+     * Downsample input, discard hits greater than max_range, and add free samples by ray tracing
+     */
     void SemanticBKIOctoMap::get_training_data(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,
                                       float free_resolution, float max_range, GPPointCloud &xy) const {
+
+        // downsample hits
         PCLPointCloud sampled_hits;
         downsample(cloud, sampled_hits, ds_resolution);
 
@@ -388,18 +380,14 @@ namespace semantic_bki {
                     continue;
             }
             
+            // copy hits into output xy
             xy.emplace_back(p, it->label);
 
+            // create free samples from single beam
             PointCloud frees_n;
             beam_sample(p, origin, frees_n, free_resolution);
 
-            PCLPointType p_origin = PCLPointType();
-            p_origin.x = origin.x();
-            p_origin.y = origin.y();
-            p_origin.z = origin.z();
-            p_origin.label = 0;
-            frees.push_back(p_origin);
-            
+            // add free samples to list of all free samples
             for (auto p = frees_n.begin(); p != frees_n.end(); ++p) {
                 PCLPointType p_free = PCLPointType();
                 p_free.x = p->x();
@@ -411,6 +399,7 @@ namespace semantic_bki {
             }
         }
 
+        // downsample free samples and add to output
         PCLPointCloud sampled_frees;    
         downsample(frees, sampled_frees, ds_resolution);
 
@@ -488,6 +477,7 @@ namespace semantic_bki {
 
     void SemanticBKIOctoMap::get_blocks_in_bbox(const point3f &lim_min, const point3f &lim_max,
                                        vector<BlockHashKey> &blocks) const {
+        // with very conservative edges
         for (float x = lim_min.x() - block_size; x <= lim_max.x() + 2 * block_size; x += block_size) {
             for (float y = lim_min.y() - block_size; y <= lim_max.y() + 2 * block_size; y += block_size) {
                 for (float z = lim_min.z() - block_size; z <= lim_max.z() + 2 * block_size; z += block_size) {

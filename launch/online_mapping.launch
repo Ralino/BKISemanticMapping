@@ -4,11 +4,16 @@
 
     <node pkg="semantic_bki" type="online_mapping_node" name="mapping_node" output="screen">
 
+        <env name="CPUPROFILE" value="/tmp/multi_thread.prof" />
+        <env name="LD_PRELOAD" value="/usr/lib/x86_64-linux-gnu/libprofiler.so" />
+        <!--env name="OMP_NUM_THREADS" value="1" /-->
+
         <!-- params from semantickitti_node -->
         <rosparam>
             resolution: 0.3
             block_depth: 3
-            num_class: 34
+            # block_size = resolution * 2^(block_depth - 1) (octree depth)
+            num_class: 35
             sf2: 10
             ell: 0.3
             prior: 0.001
@@ -16,9 +21,10 @@
             free_thresh: 0.3
             occupied_thresh: 0.7
 
-            ds_resolution: 0.1
-            free_resolution: 100
-            max_range: -1
+            # the lower the higher the number of points in each inference block
+            ds_resolution: -0.1
+            free_resolution: 1.
+            max_range: 10.
         </rosparam>
     </node>
 

@@ -1158,7 +1158,6 @@ ELEMTYPEREAL RTREE_QUAL::RectSphericalVolume(Rect* a_rect)
   ASSERT(a_rect);
    
   ELEMTYPEREAL sumOfSquares = (ELEMTYPEREAL)0;
-  ELEMTYPEREAL radius;
 
   for(int index=0; index < NUMDIMS; ++index) 
   {
@@ -1166,19 +1165,19 @@ ELEMTYPEREAL RTREE_QUAL::RectSphericalVolume(Rect* a_rect)
     sumOfSquares += halfExtent * halfExtent;
   }
 
-  radius = (ELEMTYPEREAL)sqrt(sumOfSquares);
-  
   // Pow maybe slow, so test for common dims like 2,3 and just use x*x, x*x*x.
-  if(NUMDIMS == 3)
+  if constexpr (NUMDIMS == 3)
   {
+    auto radius = (ELEMTYPEREAL)sqrt(sumOfSquares);
     return (radius * radius * radius * m_unitSphereVolume);
   }
-  else if(NUMDIMS == 2)
+  else if constexpr (NUMDIMS == 2)
   {
-    return (radius * radius * m_unitSphereVolume);
+    return (sumOfSquares * m_unitSphereVolume);
   }
   else
   {
+    auto radius = (ELEMTYPEREAL)sqrt(sumOfSquares);
     return (ELEMTYPEREAL)(pow(radius, NUMDIMS) * m_unitSphereVolume);
   }
 }

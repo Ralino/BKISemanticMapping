@@ -16,12 +16,12 @@ struct Params {
   float sf2 = 10;
   float ell = 0.3;
   float prior = 0.001;
-  float var_thresh = 0.09;
-  float free_thresh = 0.3;
-  float occupied_thresh = 0.7;
+  float var_thresh = 0.09;  // unused
+  float free_thresh = 0.3; // unused
+  float occupied_thresh = 0.7; // unused
 
   float ds_resolution = 0.1;
-  float free_resolution = 100;
+  float free_resolution = 100; // beam traversal for points of class empty. Value of 100 effectively disables this
   float max_range = -1;
 };
 

@@ -38,10 +38,11 @@ namespace semantic_bki {
       for (int i = 0; i < num_class; ++i)
         ms[i] += ybars[i];
 
-      std::vector<float> probs(num_class);
-      get_probs(probs);
+      semantics = std::distance(ms.begin(), std::max_element(ms.begin(), ms.end()));
+      //std::vector<float> probs(num_class);
+      //get_probs(probs);
 
-      semantics = std::distance(probs.begin(), std::max_element(probs.begin(), probs.end()));
+      //semantics = std::distance(probs.begin(), std::max_element(probs.begin(), probs.end()));
 
       if (semantics == 0)
         state = State::FREE;

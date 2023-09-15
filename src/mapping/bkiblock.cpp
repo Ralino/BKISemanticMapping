@@ -71,6 +71,8 @@ namespace semantic_bki {
         return block_to_hash_key(center.x(), center.y(), center.z());
     }
 
+    // assume abs x,y,z are smaller than 2**19 (524288)
+    // (actually just unique identifier, actual hashing ha std::unordered_map ni makaserareta)
     BlockHashKey block_to_hash_key(float x, float y, float z) {
         return (int64_t(x / (double) Block::size + 524288.5) << 40) |
                (int64_t(y / (double) Block::size + 524288.5) << 20) |
