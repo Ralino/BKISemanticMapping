@@ -28,29 +28,6 @@ namespace semantic_bki {
             this->y_vec.push_back(label);
         }
 
-        /*
-         * @brief Fit BGK Model
-         * @param x input vector (3N, row major)
-         * @param y target vector (N)
-         */
-        void train(const std::vector<T> &x, const std::vector<T> &y) {
-            assert(x.size() % dim == 0 && (int) (x.size() / dim) == y.size());
-            MatrixXType _x = Eigen::Map<const MatrixXType>(x.data(), x.size() / dim, dim);
-            MatrixYType _y = Eigen::Map<const MatrixYType>(y.data(), y.size(), 1);
-            this->y_vec = y;
-            train(_x, _y);
-        }
-
-        /*
-         * @brief Fit BGK Model
-         * @param x input matrix (NX3)
-         * @param y target matrix (NX1)
-         */
-        void train(const MatrixXType &x, const MatrixYType &y) {
-            throw std::runtime_error("obsolete");
-        }
-
-       
         void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) const {
             assert(xs.size() % dim == 0);
             MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
