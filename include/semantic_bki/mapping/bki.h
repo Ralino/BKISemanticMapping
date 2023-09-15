@@ -19,7 +19,14 @@ namespace semantic_bki {
         using MatrixDKType = Eigen::Matrix<T, -1, 1>;
         using MatrixYType = Eigen::Matrix<T, -1, 1>;
 
-        SemanticBKInference(int nc, T sf2, T ell) : nc(nc), sf2(sf2), ell(ell), trained(false) { }
+        SemanticBKInference(int nc, T sf2, T ell) : nc(nc), sf2(sf2), ell(ell) { }
+
+        void addPoint(point3f p, float label) {
+            this->x_vec.push_back(p.x());
+            this->x_vec.push_back(p.y());
+            this->x_vec.push_back(p.z());
+            this->y_vec.push_back(label);
+        }
 
         /*
          * @brief Fit BGK Model
@@ -40,16 +47,14 @@ namespace semantic_bki {
          * @param y target matrix (NX1)
          */
         void train(const MatrixXType &x, const MatrixYType &y) {
-            this->x = MatrixXType(x);
-            this->y = MatrixYType(y);
-            trained = true;
+            throw std::runtime_error("obsolete");
         }
 
        
-        void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
+        void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) const {
             assert(xs.size() % dim == 0);
             MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
-            assert(trained == true);
+            const Eigen::Map<const MatrixXType> x(x_vec.data(), x_vec.size() / dim, dim);
             MatrixKType Ks;
 
             // _xs: leafs, x: new laser points
@@ -79,7 +84,7 @@ namespace semantic_bki {
         void predict_csm(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) {
             assert(xs.size() % dim == 0);
             MatrixXType _xs = Eigen::Map<const MatrixXType>(xs.data(), xs.size() / dim, dim);
-            assert(trained == true);
+            const Eigen::Map<const MatrixXType> x(x_vec.data(), x_vec.size() / dim, dim);
             MatrixKType Ks;
 
             covCountingSensorModel(_xs, x, Ks);
@@ -161,11 +166,8 @@ namespace semantic_bki {
         T ell;    // length-scale
         int nc;   // number of classes
 
-        MatrixXType x;   // temporary storage of training data
-        MatrixYType y;   // temporary storage of training labels
+        std::vector<T> x_vec;
         std::vector<T> y_vec;
-
-        bool trained;    // true if bgkinference stored training data
     };
 
     typedef SemanticBKInference<3, float> SemanticBKI3f;

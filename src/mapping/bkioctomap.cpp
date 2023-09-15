@@ -237,55 +237,33 @@ namespace semantic_bki {
         vector<BlockHashKey> blocks;
         get_blocks_in_bbox(lim_min, lim_max, blocks);
 
-        // FIXME no need for rtree, instead place points directly in hash grid map (SemanticBKI3f)
-        for (auto it = xy.cbegin(); it != xy.cend(); ++it) {
-            float p[] = {it->first.x(), it->first.y(), it->first.z()};
-            rtree.Insert(p, p, const_cast<GPPointType *>(&*it));
-        }
         /////////////////////////////////////////////////
 
         ////////// Training /////////////////////////////
         /////////////////////////////////////////////////
  
-        // all blocks with points in them and their direct neighbors
-        vector<BlockHashKey> test_blocks;
         std::unordered_map<BlockHashKey, SemanticBKI3f *> bgk_arr;
-#pragma omp parallel for schedule(dynamic)
-        for (int i = 0; i < blocks.size(); ++i) {
-            BlockHashKey key = blocks[i];
-            ExtendedBlock eblock = get_extended_block(key);
-            if (has_gp_points_in_bbox(eblock)) {
-#pragma omp critical
-                test_blocks.push_back(key);
-            };
+        for (auto point_it = xy.cbegin(); point_it != xy.cend(); ++point_it) {
+            auto pos = point_it->first;
+            auto label = point_it->second;
+            BlockHashKey key = block_to_hash_key(pos);
 
-            // this section can be replaced by simply iterating over xy and placing them into their corresponding block in bgk_arr
-            GPPointCloud block_xy;
-            get_gp_points_in_bbox(key, block_xy);
-            if (block_xy.size() < 1)
-                continue;
-
-            // all positions of the points in that block
-            vector<float> block_x;
-            // all labels of the points in that block
-            vector <float> block_y;
-            for (auto it = block_xy.cbegin(); it != block_xy.cend(); ++it) {
-                block_x.push_back(it->first.x());
-                block_x.push_back(it->first.y());
-                block_x.push_back(it->first.z());
-                block_y.push_back(it->second);
-            }
-
-            SemanticBKI3f *bgk = new SemanticBKI3f(SemanticOcTreeNode::num_class, SemanticOcTreeNode::sf2, SemanticOcTreeNode::ell);
-            bgk->train(block_x, block_y); // simple copy, no training involved
-#pragma omp critical
-            {
+            SemanticBKI3f *bgk;
+            auto bgk_it = bgk_arr.find(key);
+            if (bgk_it != bgk_arr.end()) {
+                bgk = bgk_it->second;
+            } else {
+                bgk = new SemanticBKI3f(
+                            SemanticOcTreeNode::num_class,
+                            SemanticOcTreeNode::sf2, SemanticOcTreeNode::ell);
                 bgk_arr.emplace(key, bgk);
-            };
+            }
+            bgk->addPoint(pos, label);
         }
+
 #ifdef DEBUG
         Debug_Msg("Training done");
-        Debug_Msg("Prediction: block number: " << test_blocks.size());
+        Debug_Msg("Prediction: filled blocks: " << bgk_arr.size());
 #endif
         /////////////////////////////////////////////////
 
@@ -293,8 +271,19 @@ namespace semantic_bki {
         /////////////////////////////////////////////////
 
 #pragma omp parallel for schedule(dynamic)
-        for (int i = 0; i < test_blocks.size(); ++i) {
-            BlockHashKey key = test_blocks[i];
+        for (BlockHashKey key : blocks) {
+            ExtendedBlock eblock = get_extended_block(key);
+            std::vector<SemanticBKI3f*> neighbor_bkis;
+            for (auto block_it = eblock.cbegin(); block_it != eblock.cend(); ++block_it) {
+                auto bgk = bgk_arr.find(*block_it);
+                if (bgk != bgk_arr.end()) {
+                    neighbor_bkis.push_back(bgk->second);
+                }
+            }
+
+            if (neighbor_bkis.empty()) {
+                continue;
+            }
 #pragma omp critical
             {
                 if (block_arr.find(key) == block_arr.end()) {
@@ -313,14 +302,10 @@ namespace semantic_bki {
             //std::cout << "xs size: "<<xs.size() << std::endl;
 
             // for all bgk inference blocks in the extended block, do a prediction (for each test block?)
-            ExtendedBlock eblock = block->get_extended_block();
-            for (auto block_it = eblock.cbegin(); block_it != eblock.cend(); ++block_it) {
-                auto bgk = bgk_arr.find(*block_it);
-                if (bgk == bgk_arr.end())
-                    continue;
-
+            // FIXME points in corners of a block will not be matched to points in the diagonally adjacent block
+            for (auto bgk : neighbor_bkis) {
                	vector<vector<float>> ybars;
-                bgk->second->predict(xs, ybars);
+                bgk->predict(xs, ybars);
 
                 int j = 0;
                 for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it, ++j) {
@@ -339,8 +324,6 @@ namespace semantic_bki {
         /////////////////////////////////////////////////
         for (auto it = bgk_arr.begin(); it != bgk_arr.end(); ++it)
             delete it->second;
-
-        rtree.RemoveAll();
     }
 
     void SemanticBKIOctoMap::get_bbox(point3f &lim_min, point3f &lim_max) const {
