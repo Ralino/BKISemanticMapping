@@ -150,12 +150,13 @@ namespace semantic_bki {
                 {
                     BlockHashKey key = bgk_it->first;
                     SemanticBKI3f *bgk = bgk_it->second;
+                    Block *block;
 #pragma omp critical
                     {
                         if (block_arr.find(key) == block_arr.end())
                             block_arr.emplace(key, new Block(hash_key_to_block(key)));
+                        block = block_arr[key];
                     };
-                    Block *block = block_arr[key];
                     vector<float> xs;
                     // treat leaf as point for old points
                     for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it) {
@@ -263,13 +264,14 @@ namespace semantic_bki {
             if (neighbor_bkis.empty()) {
                 continue;
             }
+            Block *block;
 #pragma omp critical
             {
                 if (block_arr.find(key) == block_arr.end()) {
                     block_arr.emplace(key, new Block(hash_key_to_block(key)));
                 }
+                block = block_arr[key];
             };
-            Block *block = block_arr[key];
             vector<float> xs;
             // treat leaf as point for old points
             for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it) {
@@ -281,7 +283,6 @@ namespace semantic_bki {
             //std::cout << "xs size: "<<xs.size() << std::endl;
 
             // for all bgk inference blocks in the extended block, do a prediction (for each test block?)
-            // FIXME points in corners of a block will not be matched to points in the diagonally adjacent block
             for (auto bgk : neighbor_bkis) {
                	vector<vector<float>> ybars;
                 bgk->predict(xs, ybars);
