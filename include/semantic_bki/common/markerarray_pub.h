@@ -9,6 +9,13 @@
 
 namespace semantic_bki {
 
+    enum class ColorMap {
+      SemanticMap = 0,
+      KITTISemanticMap = 1,
+      SemanticKITTISemanticMap = 2,
+      RELLIS
+    };
+
     double interpolate( double val, double y0, double x0, double y1, double x1 ) {
         return (val-x0)*(y1-y0)/(x1-x0) + y0;
     }
@@ -175,6 +182,121 @@ namespace semantic_bki {
           color.r = 1;
           color.g = 1;
           color.b = 1;
+          break;
+      }
+      return color;
+    }
+
+    std_msgs::ColorRGBA RellisSemanticMapColor(int c) {
+      std_msgs::ColorRGBA color;
+      color.a = 1.0;
+
+      switch (c) {
+        case 0:
+          color.r = 1.0;
+          color.g = 1.0;
+          color.b = 1.0;
+          color.a = 0.1;
+          break;
+        case 1:
+          color.r = 108.0 / 255;
+          color.g = 64.0 / 255;
+          color.b = 20.0 / 255;
+          break;
+        case 3:
+          color.r = 0.0 / 255;
+          color.g = 102.0 / 255;
+          color.b = 0.0 / 255;
+          break;
+        case 4:
+          color.r = 0.0 / 255;
+          color.g = 255.0 / 255;
+          color.b = 0.0 / 255;
+          break;
+        case 5:
+          color.r = 0.0 / 255;
+          color.g = 153.0 / 255;
+          color.b = 153.0 / 255;
+          break;
+        case 6:
+          color.r = 0.0 / 255;
+          color.g = 128.0 / 255;
+          color.b = 255.0 / 255;
+          break;
+        case 7:
+          color.r = 0.0 / 255;
+          color.g = 0.0 / 255;
+          color.b = 255.0 / 255;
+          break;
+        case 8:
+          color.r = 255.0 / 255;
+          color.g = 255.0 / 255;
+          color.b = 0.0 / 255;
+          break;
+        case 9:
+          color.r = 255.0 / 255;
+          color.g = 0.0 / 255;
+          color.b = 127.0 / 255;
+          break;
+        case 10:
+          color.r = 64.0 / 255;
+          color.g = 64.0 / 255;
+          color.b = 64.0 / 255;
+          break;
+        case 12:
+          color.r = 255.0 / 255;
+          color.g = 0.0 / 255;
+          color.b = 0.0 / 255;
+          break;
+        case 15:
+          color.r = 102.0 / 255;
+          color.g = 0.0 / 255;
+          color.b = 0.0 / 255;
+          break;
+        case 17:
+          color.r = 204.0 / 255;
+          color.g = 153.0 / 255;
+          color.b = 255.0 / 255;
+          break;
+        case 18:
+          color.r = 102.0 / 255;
+          color.g = 0.0 / 255;
+          color.b = 204.0 / 255;
+          break;
+        case 19:
+          color.r = 255.0 / 255;
+          color.g = 153.0 / 255;
+          color.b = 204.0 / 255;
+          break;
+        case 23:
+          color.r = 170.0 / 255;
+          color.g = 170.0 / 255;
+          color.b = 170.0 / 255;
+          break;
+        case 27:
+          color.r = 41.0 / 255;
+          color.g = 121.0 / 255;
+          color.b = 255.0 / 255;
+          break;
+        case 31:
+          color.r = 134.0 / 255;
+          color.g = 255.0 / 255;
+          color.b = 239.0 / 255;
+          break;
+        case 33:
+          color.r = 99.0 / 255;
+          color.g = 66.0 / 255;
+          color.b = 34.0 / 255;
+          break;
+        case 34:
+          color.r = 110.0 / 255;
+          color.g = 22.0 / 255;
+          color.b = 138.0 / 255;
+          break;
+        default:
+          color.r = 1.;
+          color.g = 1.;
+          color.b = 1.;
           break;
       }
       return color;
@@ -455,6 +577,10 @@ namespace semantic_bki {
         }
 
         void insert_point3d_semantics(float x, float y, float z, float size, int c, int dataset) {
+          insert_point3d_semantics(x, y, z, size, c, static_cast<ColorMap>(dataset));
+        }
+
+        void insert_point3d_semantics(float x, float y, float z, float size, int c, ColorMap dataset) {
             geometry_msgs::Point center;
             center.x = x;
             center.y = y;
@@ -466,14 +592,18 @@ namespace semantic_bki {
 
             msg->markers[depth].points.push_back(center);
             switch (dataset) {
-              case 1:
+              case ColorMap::SemanticMap:
+                msg->markers[depth].colors.push_back(SemanticMapColor(c));
+                break;
+              case ColorMap::KITTISemanticMap:
                 msg->markers[depth].colors.push_back(KITTISemanticMapColor(c));
                 break;
-              case 2:
+              case ColorMap::SemanticKITTISemanticMap:
                 msg->markers[depth].colors.push_back(SemanticKITTISemanticMapColor(c));
                 break;
-              default:
-                msg->markers[depth].colors.push_back(SemanticMapColor(c));
+              case ColorMap::RELLIS:
+                msg->markers[depth].colors.push_back(RellisSemanticMapColor(c));
+                break;
             }
         }
 

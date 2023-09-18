@@ -6,7 +6,7 @@
 
         <env name="CPUPROFILE" value="/tmp/multi_thread.prof" />
         <env name="LD_PRELOAD" value="/usr/lib/x86_64-linux-gnu/libprofiler.so" />
-        <!--env name="OMP_NUM_THREADS" value="1" /-->
+        <env name="OMP_NUM_THREADS" value="10" />
 
         <!-- params from semantickitti_node -->
         <rosparam>
@@ -25,6 +25,33 @@
             ds_resolution: -0.1
             free_resolution: 2.
             max_range: 10.
+        </rosparam>
+    </node>
+
+    <node pkg="semantic_bki" type="online_mapping_node" name="csm_mapping_node" output="screen">
+
+        <env name="CPUPROFILE" value="/tmp/multi_thread.prof" />
+        <env name="LD_PRELOAD" value="/usr/lib/x86_64-linux-gnu/libprofiler.so" />
+        <env name="OMP_NUM_THREADS" value="2" />
+
+        <!-- params from semantickitti_node -->
+        <rosparam>
+            resolution: 0.3
+            block_depth: 1
+            # block_size = resolution * 2^(block_depth - 1) (octree depth)
+            num_class: 35
+            sf2: 10
+            ell: 0.3
+            prior: 0.001
+            var_thresh: 0.09
+            free_thresh: 0.3
+            occupied_thresh: 0.7
+
+            # the lower the higher the number of points in each inference block
+            ds_resolution: -0.1
+            free_resolution: 2.
+            max_range: 10.
+            csm: True
         </rosparam>
     </node>
 

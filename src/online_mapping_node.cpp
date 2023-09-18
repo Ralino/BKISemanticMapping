@@ -5,8 +5,8 @@
 #include "markerarray_pub.h"
 
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl_ros/impl/transforms.hpp>
+#include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 
 struct Params {
@@ -16,13 +16,16 @@ struct Params {
   float sf2 = 10;
   float ell = 0.3;
   float prior = 0.001;
-  float var_thresh = 0.09;  // unused
-  float free_thresh = 0.3; // unused
+  float var_thresh = 0.09;     // unused
+  float free_thresh = 0.3;     // unused
   float occupied_thresh = 0.7; // unused
 
   float ds_resolution = 0.1;
-  float free_resolution = 100; // beam traversal for points of class empty. Value of 100 effectively disables this
+  float free_resolution = 100; // beam traversal for points of class empty.
+                               // Value of 100 effectively disables this
   float max_range = -1;
+
+  bool csm = false;
 };
 
 class OnlineMapper {
@@ -44,15 +47,17 @@ public:
     m_ph.getParam("ds_resolution", m_params.ds_resolution);
     m_ph.getParam("free_resolution", m_params.free_resolution);
     m_ph.getParam("max_range", m_params.max_range);
+    m_ph.getParam("csm", m_params.csm);
 
     std::cout << "num_class: " << m_params.num_class << std::endl;
+    std::cout << "sizeof block: " << sizeof(semantic_bki::Block) << std::endl;
 
     m_bki_map = std::make_unique<semantic_bki::SemanticBKIOctoMap>(
         m_params.resolution, m_params.block_depth, m_params.num_class,
         m_params.sf2, m_params.ell, m_params.prior, m_params.var_thresh,
         m_params.free_thresh, m_params.occupied_thresh);
     m_vis_pub = std::make_unique<semantic_bki::MarkerArrayPub>(
-        m_nh, "occupied_cells_vis_array", m_params.resolution);
+        m_ph, "occupied_cells_vis_array", m_params.resolution);
   }
 
   void labeledPointCloudCallback(const semantic_bki::PCLPointCloud &msg) {
@@ -73,8 +78,15 @@ public:
         static_cast<float>(pc_pos.transform.translation.x),
         static_cast<float>(pc_pos.transform.translation.y),
         static_cast<float>(pc_pos.transform.translation.z)};
-    m_bki_map->insert_pointcloud(m_cloud, origin, m_params.ds_resolution,
-                                 m_params.free_resolution, m_params.max_range);
+    if (m_params.csm) {
+      m_bki_map->insert_pointcloud_csm(m_cloud, origin, m_params.ds_resolution,
+                                       m_params.free_resolution,
+                                       m_params.max_range);
+    } else {
+      m_bki_map->insert_pointcloud(m_cloud, origin, m_params.ds_resolution,
+                                   m_params.free_resolution,
+                                   m_params.max_range);
+    }
 
     visualize();
   }
@@ -85,7 +97,8 @@ public:
       if (it.get_node().get_state() == semantic_bki::State::OCCUPIED) {
         semantic_bki::point3f p = it.get_loc();
         m_vis_pub->insert_point3d_semantics(p.x(), p.y(), p.z(), it.get_size(),
-                                            it.get_node().get_semantics(), 2);
+                                            it.get_node().get_semantics(),
+                                            semantic_bki::ColorMap::RELLIS);
       }
     }
     m_vis_pub->publish();
