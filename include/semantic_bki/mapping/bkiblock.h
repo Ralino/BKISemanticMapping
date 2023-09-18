@@ -7,6 +7,8 @@
 #include "bkioctree_node.h"
 #include "bkioctree.h"
 
+#define ALL_NEIGHBORS
+
 namespace semantic_bki {
 
     /// Hask key to index Block given block's center.
@@ -18,8 +20,13 @@ namespace semantic_bki {
     std::unordered_map<unsigned short, OcTreeHashKey> init_index_map(const std::unordered_map<OcTreeHashKey, point3f> &key_loc_map,
                                                                      unsigned short max_depth);
 
+#ifdef ALL_NEIGHBORS
+    /// block and all adjacent blocks
+    typedef std::array<BlockHashKey, 27> ExtendedBlock;
+#else
     /// block plus the 6 directly facing blocks
     typedef std::array<BlockHashKey, 7> ExtendedBlock;
+#endif
 
     /// Convert from block to hash key.
     BlockHashKey block_to_hash_key(point3f center);

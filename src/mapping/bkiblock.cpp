@@ -91,8 +91,20 @@ namespace semantic_bki {
         float x = center.x();
         float y = center.y();
         float z = center.z();
-        blocks[0] = key;
 
+#ifdef ALL_NEIGHBORS
+        size_t i = 0;
+        for (int x_layer = -1; x_layer <= 1; ++x_layer) {
+            for (int y_layer = -1; y_layer <= 1; ++y_layer) {
+                for (int z_layer = -1; z_layer <= 1; ++z_layer) {
+                    blocks[i++] = block_to_hash_key(x + x_layer * Block::size,
+                                                    y + y_layer * Block::size,
+                                                    z + z_layer * Block::size);
+                }
+            }
+        }
+#else
+        blocks[0] = key;
         float ex, ey, ez;
         for (int i = 0; i < 6; ++i) {
             ex = (i / 2 == 0) ? (i % 2 == 0 ? Block::size : -Block::size) : 0;
@@ -100,6 +112,7 @@ namespace semantic_bki {
             ez = (i / 2 == 2) ? (i % 2 == 0 ? Block::size : -Block::size) : 0;
             blocks[i + 1] = block_to_hash_key(ex + x, ey + y, ez + z);
         }
+#endif
         return blocks;
     }
 

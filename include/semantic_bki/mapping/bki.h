@@ -129,9 +129,11 @@ namespace semantic_bki {
             // Possible because Kxz <= 0 when dist >= ell
             for (int i = 0; i < Kxz.rows(); ++i)
             {
-                for (int j = 0; j < Kxz.cols(); ++j)
-                    if (Kxz(i,j) < 0.0)
+                for (int j = 0; j < Kxz.cols(); ++j) {
+                    if (Kxz(i,j) < 0.0) {
                         Kxz(i,j) = 0.0f;
+                    }
+                }
             }
         }
 

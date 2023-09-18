@@ -11,7 +11,7 @@
         <!-- params from semantickitti_node -->
         <rosparam>
             resolution: 0.3
-            block_depth: 3
+            block_depth: 1
             # block_size = resolution * 2^(block_depth - 1) (octree depth)
             num_class: 35
             sf2: 10
