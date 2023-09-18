@@ -1,3 +1,4 @@
+#include <random>
 #include <algorithm>
 #include <pcl/filters/voxel_grid.h>
 
@@ -326,8 +327,9 @@ namespace semantic_bki {
                                       float free_resolution, float max_range, GPPointCloud &xy) const {
 
         // downsample hits
-        PCLPointCloud sampled_hits;
-        downsample(cloud, sampled_hits, ds_resolution);
+        //PCLPointCloud sampled_hits;
+        //downsample(cloud, sampled_hits, ds_resolution);
+        const PCLPointCloud& sampled_hits = cloud;
 
         PCLPointCloud frees;
         frees.height = 1;
@@ -361,8 +363,9 @@ namespace semantic_bki {
         }
 
         // downsample free samples and add to output
-        PCLPointCloud sampled_frees;    
-        downsample(frees, sampled_frees, ds_resolution);
+        //PCLPointCloud sampled_frees;    
+        //downsample(frees, sampled_frees, ds_resolution);
+        const PCLPointCloud& sampled_frees = frees;
 
         for (auto it = sampled_frees.begin(); it != sampled_frees.end(); ++it) {
             xy.emplace_back(point3f(it->x, it->y, it->z), 0.0f);
@@ -385,6 +388,9 @@ namespace semantic_bki {
 
     void SemanticBKIOctoMap::beam_sample(const point3f &hit, const point3f &origin, PointCloud &frees,
                                 float free_resolution) const {
+        static std::mt19937 rand_gen;
+        std::uniform_real_distribution<float> dist(0.0, free_resolution);
+
         frees.clear();
 
         float x0 = origin.x();
@@ -401,7 +407,7 @@ namespace semantic_bki {
         float ny = (y - y0) / l;
         float nz = (z - z0) / l;
 
-        float d = free_resolution;
+        float d = dist(rand_gen);
         while (d < l) {
             frees.emplace_back(x0 + nx * d, y0 + ny * d, z0 + nz * d);
             d += free_resolution;

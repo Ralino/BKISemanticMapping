@@ -23,7 +23,7 @@
 
             # the lower the higher the number of points in each inference block
             ds_resolution: -0.1
-            free_resolution: 1.
+            free_resolution: 2.
             max_range: 10.
         </rosparam>
     </node>
