@@ -121,6 +121,7 @@ include_directories(
   include/semantic_bki/common
   include/semantic_bki/mapping
   include/semantic_bki/dataset_devkit
+  include/semantic_bki
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
@@ -163,6 +164,7 @@ add_executable(online_mapping_node
   ${MAPPING_SOURCE_FILES}
   ${COMMON_SOURCE_FILES}
   src/online_mapping_node.cpp
+  src/OnlineMapper.cpp
 )
 
 ## Add cmake target dependencies of the executable/library
