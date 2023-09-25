@@ -16,8 +16,8 @@ OnlineMapper::OnlineMapper(const OnlineMapper::Params &params,
       m_params.resolution, m_params.block_depth, m_params.num_class,
       m_params.sf2, m_params.ell, m_params.prior, m_params.var_thresh,
       m_params.free_thresh, m_params.occupied_thresh);
-  m_vis_pub = std::make_unique<semantic_bki::MarkerArrayPub>(
-      ros::NodeHandle("~"), "occupied_cells_vis_array", m_params.resolution);
+  m_vis_pub =
+      std::make_unique<semantic_bki::MarkerArrayPub>(m_params.resolution);
 }
 
 OnlineMapper::~OnlineMapper() = default;
@@ -49,7 +49,7 @@ void OnlineMapper::labeledPointCloudCallback(
   }
 }
 
-void OnlineMapper::visualize() {
+void OnlineMapper::visualize(const ros::Publisher &publisher) {
   m_vis_pub->clear_map(m_params.resolution);
   for (auto it = m_bki_map->begin_leaf(); it != m_bki_map->end_leaf(); ++it) {
     if (it.get_node().get_state() == semantic_bki::State::OCCUPIED) {
@@ -59,5 +59,5 @@ void OnlineMapper::visualize() {
                                           semantic_bki::ColorMap::RELLIS);
     }
   }
-  m_vis_pub->publish();
+  m_vis_pub->publish(publisher);
 }

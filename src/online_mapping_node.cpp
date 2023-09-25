@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include "OnlineMapper.hpp"
 
@@ -28,13 +29,14 @@ int main(int argc, char **argv) {
 
   auto tf_buffer = std::make_shared<tf2_ros::Buffer>();
   tf2_ros::TransformListener tf_listener(*tf_buffer);
+  ros::Publisher vis_pub = ph.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
 
   OnlineMapper mapper(params, tf_buffer);
   labeled_pc_sub = nh.subscribe<pcl::PointCloud<pcl::PointXYZL>>(
       "ground_truth/xyzl", 1,
       [&](const pcl::PointCloud<pcl::PointXYZL>::ConstPtr &msg) {
         mapper.labeledPointCloudCallback(*msg);
-        mapper.visualize();
+        mapper.visualize(vis_pub);
       });
   ros::spin();
 }

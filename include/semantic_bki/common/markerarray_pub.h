@@ -525,13 +525,11 @@ namespace semantic_bki {
         typedef pcl::PointXYZ PointType;
         typedef pcl::PointCloud<PointType> PointCloud;
     public:
-        MarkerArrayPub(ros::NodeHandle nh, std::string topic, float resolution) : nh(nh),
-                                                                                  msg(new visualization_msgs::MarkerArray),
-                                                                                  topic(topic),
-                                                                                  resolution(resolution),
-                                                                                  markerarray_frame_id("map") {
+        MarkerArrayPub(ros::NodeHandle nh, std::string topic, float resolution) : MarkerArrayPub(resolution) {
             pub = nh.advertise<visualization_msgs::MarkerArray>(topic, 1, true);
+        }
 
+        MarkerArrayPub(float resolution) : msg(new visualization_msgs::MarkerArray), markerarray_frame_id("map") {
             msg->markers.resize(2);
             for (int i = 0; i < 2; ++i) {
                 msg->markers[i].header.frame_id = markerarray_frame_id;
@@ -659,13 +657,16 @@ namespace semantic_bki {
             ros::spinOnce();
         }
 
+        void publish(const ros::Publisher& pub) const {
+            msg->markers[0].header.stamp = ros::Time::now();
+            pub.publish(*msg);
+            ros::spinOnce();
+        }
+
     private:
-        ros::NodeHandle nh;
         ros::Publisher pub;
         visualization_msgs::MarkerArray::Ptr msg;
         std::string markerarray_frame_id;
-        std::string topic;
-        float resolution;
     };
 
 }

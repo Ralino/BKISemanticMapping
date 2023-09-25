@@ -36,7 +36,7 @@ public:
 
   void labeledPointCloudCallback(const semantic_bki::PCLPointCloud &msg);
 
-  void visualize();
+  void visualize(const ros::Publisher &publisher);
 
 private:
   Params m_params;
