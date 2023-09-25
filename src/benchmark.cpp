@@ -12,6 +12,13 @@
 #include "OnlineMapper.hpp"
 #include "tf2_msgs/TFMessage.h"
 
+// #define VISUALIZE
+
+#ifdef VISUALIZE
+#include <visualization_msgs/MarkerArray.h>
+#endif
+
+static constexpr int SKIP_FRAMES = 200;
 static constexpr int NUM_FRAMES = 200;
 
 class MultiViewIterator {
@@ -75,6 +82,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+#ifdef VISUALIZE
+  ros::NodeHandle ph("~");
+  ros::Publisher vis_pub = ph.advertise<visualization_msgs::MarkerArray>(
+      "occupied_cells_vis_array", 1, true);
+
+#endif
+
   std::vector<std::unique_ptr<rosbag::Bag>> bags;
 
   for (int i = 1; i < argc; ++i) {
@@ -110,8 +124,8 @@ int main(int argc, char **argv) {
   OnlineMapper mapper(params, tf_buffer);
 
   int frame_number;
-  auto start_time = std::chrono::steady_clock::now();
-  for (frame_number = 0; frame_number < NUM_FRAMES; ++frame_number) {
+  std::chrono::steady_clock::time_point start_time;
+  for (frame_number = 0; frame_number < SKIP_FRAMES + NUM_FRAMES; ++frame_number) {
     if (pc_msg_iterator.atEnd()) {
       frame_number++;
       break;
@@ -128,15 +142,23 @@ int main(int argc, char **argv) {
       }
       ++tf_msg_iterator;
     }
-    auto pc_msg_ptr =
-        pc_msg_iterator->instantiate<pcl::PointCloud<pcl::PointXYZL>>();
-    if (!pc_msg_ptr) {
-      std::cout << "A message from topic 'ground_truth/xyzl' could not be "
-                   "converted to SemanticPointCloud"
-                << std::endl;
-      return 1;
+    if (frame_number == SKIP_FRAMES) {
+      start_time = std::chrono::steady_clock::now();
     }
-    mapper.labeledPointCloudCallback(*pc_msg_ptr);
+    if (frame_number >= SKIP_FRAMES) {
+      auto pc_msg_ptr =
+          pc_msg_iterator->instantiate<pcl::PointCloud<pcl::PointXYZL>>();
+      if (!pc_msg_ptr) {
+        std::cout << "A message from topic 'ground_truth/xyzl' could not be "
+                     "converted to SemanticPointCloud"
+                  << std::endl;
+        return 1;
+      }
+      mapper.labeledPointCloudCallback(*pc_msg_ptr);
+#ifdef VISUALIZE
+      mapper.visualize(vis_pub);
+#endif
+    }
 
     ++pc_msg_iterator;
   }
@@ -144,8 +166,8 @@ int main(int argc, char **argv) {
   auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(
       end_time - start_time);
 
-  std::cout << "Total runtime (" << frame_number
+  std::cout << "Total runtime (" << frame_number - SKIP_FRAMES
             << " frames): " << delta.count() << "ms" << std::endl;
-  std::cout << "Per frame: " << delta.count() / frame_number << "ms"
+  std::cout << "Per frame: " << delta.count() / (frame_number - SKIP_FRAMES) << "ms"
             << std::endl;
 }
