@@ -158,24 +158,24 @@ namespace semantic_bki {
                         block = block_arr[key];
                     };
                     vector<float> xs;
+                    auto leaf_it = block->begin_leaf();
                     // treat leaf as point for old points
-                    for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it) {
-                        point3f p = block->get_loc(leaf_it);
-                        xs.push_back(p.x());
-                        xs.push_back(p.y());
-                        xs.push_back(p.z());
-                    }
+                    point3f p = block->get_loc(leaf_it);
+                    xs.push_back(p.x());
+                    xs.push_back(p.y());
+                    xs.push_back(p.z());
 
                     vector<vector<float>> ybars;
                     bgk->predict_csm(xs, ybars);
 
                     int j = 0;
-                    for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it, ++j) {
-                        SemanticOcTreeNode &node = leaf_it.get_node();
+                    leaf_it.get_node().update(ybars[j]);
+                    //for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it, ++j) {
+                    //    SemanticOcTreeNode &node = leaf_it.get_node();
 
-                        // Only need to update if kernel density total kernel density est > 0
-                        node.update(ybars[j]);
-                    }
+                    //    // Only need to update if kernel density total kernel density est > 0
+                    //    node.update(ybars[j]);
+                    //}
 
                 }
             }
@@ -284,16 +284,15 @@ namespace semantic_bki {
 
             // for all bgk inference blocks in the extended block, do a prediction (for each test block?)
             for (auto bgk : neighbor_bkis) {
-               	vector<vector<float>> ybars;
-                bgk->predict(xs, ybars);
 
-                int j = 0;
-                for (auto leaf_it = block->begin_leaf(); leaf_it != block->end_leaf(); ++leaf_it, ++j) {
-                    SemanticOcTreeNode &node = leaf_it.get_node();
-                    // Only need to update if kernel density total kernel density est > 0
-                    //if (kbar[j] > 0.0)
-                    node.update(ybars[j]);
-                }
+                // old predict
+               	//vector<vector<float>> ybars;
+                //bgk->predict(xs, ybars);
+                //(*block)[block->get_node(0, 0, 0)].update(ybars[0]);
+
+                // new predict
+                auto predictions = bgk->new_predict(xs);
+                (*block)[block->get_node(0, 0, 0)].update(predictions.array());
             }
         }
 #ifdef DEBUG

@@ -17,7 +17,7 @@ namespace semantic_bki {
      * Before using this class, set the static member variables first.
      */
     class Semantics {
-      
+
       friend class SemanticBKIOctoMap;
 
     public:
@@ -42,14 +42,26 @@ namespace semantic_bki {
          * @param ybar kernel density estimate of positive class (occupied)
          * @param kbar kernel density of negative class (unoccupied)
          */
-        void update(std::vector<float>& ybars);
+        template<typename Iterable>
+        void update(const Iterable& ybars) {
+            classified = true;
+            for (int i = 0; i < num_class; ++i) {
+                ms[i] += ybars[i];
+                if (ms[i] > ms[semantics]) semantics = i;
+            }
+
+            if (semantics == 0)
+                state = State::FREE;
+            else
+                state = State::OCCUPIED;
+        }
 
         /// Get probability of occupancy.
         void get_probs(std::vector<float>& probs) const;
 
         /// Get variance of occupancy (uncertainty)
-	      void get_vars(std::vector<float>& vars) const;
-        
+        void get_vars(std::vector<float>& vars) const;
+
         /*
          * @brief Get occupancy state of the node.
          * @return occupancy state (see State).
@@ -63,9 +75,9 @@ namespace semantic_bki {
     private:
         std::vector<float> ms;
         State state;
-        int semantics;
+        int semantics = 0;
         static int num_class;      // number of classes
-        
+
         static float sf2;
         static float ell;   // length-scale
         static float prior;  // prior on each class

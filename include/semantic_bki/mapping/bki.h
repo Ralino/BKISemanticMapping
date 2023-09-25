@@ -2,6 +2,8 @@
 
 #include "bkioctomap.h"
 
+static const float M_PI_f = M_PI;
+
 namespace semantic_bki {
 
 	/*
@@ -27,6 +29,57 @@ namespace semantic_bki {
             this->x_vec.push_back(p.z());
             this->y_vec.push_back(label);
         }
+
+        struct Params {
+            float max_distance; // l in paper
+            float variance;     // sigma_0 in paper
+            int num_classes;
+        };
+
+        Eigen::VectorXf new_dist(const Eigen::MatrixX3f& points, const Eigen::Vector3f origin) {
+            return (points.rowwise() - origin.transpose()).rowwise().norm();
+        }
+
+        Eigen::VectorXf new_inner_predict(Eigen::VectorXf &&distances,
+                const Eigen::VectorXi &labels, Params params) {
+            assert(distances.size() == labels.size());
+
+            distances /= params.max_distance;
+            const Eigen::RowVectorXf kernel =
+                ((2.f + (distances * (2.f * M_PI_f)).array().cos()) *
+                     (1.f - distances.array()) * (params.variance / 3.f) +
+                 (distances * (2.f * M_PI_f)).array().sin() *
+                     (params.variance / (2.f * M_PI_f)))
+                    .transpose();
+            Eigen::VectorXf class_probs(params.num_classes);
+
+            Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero(labels.rows());
+            for (int k = 0; k < params.num_classes; ++k) {
+                decltype(zero_vec) class_filter = (labels.array() == k).select(1.f, zero_vec);
+                const auto prob = kernel * class_filter;
+                assert(prob.rows() == 1 && prob.cols() == 1);
+                class_probs(k) = prob(0,0);
+            }
+
+            return class_probs;
+        }
+
+        Eigen::VectorXf new_predict(const std::vector<float>& origin) {
+            const Eigen::Map<const MatrixXType> points(x_vec.data(), x_vec.size() / dim, dim);
+            Eigen::VectorXi labels(y_vec.size());
+            for (int k = 0; k < y_vec.size(); ++k) {
+                labels(k) = static_cast<int>(y_vec[k]);
+            }
+            Params params{ell, sf2, nc};
+            auto all_distances = new_dist(points, {origin[0], origin[1], origin[2]});
+            for (int i = 0; i < all_distances.rows(); ++i) {
+                if (all_distances(i) > params.max_distance) {
+                    all_distances(i) = params.max_distance;
+                }
+            }
+            return new_inner_predict(std::move(all_distances), labels, params);
+        }
+
 
         void predict(const std::vector<T> &xs, std::vector<std::vector<T>> &ybars) const {
             assert(xs.size() % dim == 0);

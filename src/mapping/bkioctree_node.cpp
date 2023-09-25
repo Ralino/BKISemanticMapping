@@ -31,22 +31,4 @@ namespace semantic_bki {
       for (int i = 0; i < num_class; ++i)
         vars[i] = ((ms[i] / sum) - (ms[i] / sum) * (ms[i] / sum)) / (sum + 1);
     }
-
-    void Semantics::update(std::vector<float>& ybars) {
-      assert(ybars.size() == num_class);
-      classified = true;
-      for (int i = 0; i < num_class; ++i)
-        ms[i] += ybars[i];
-
-      semantics = std::distance(ms.begin(), std::max_element(ms.begin(), ms.end()));
-      //std::vector<float> probs(num_class);
-      //get_probs(probs);
-
-      //semantics = std::distance(probs.begin(), std::max_element(probs.begin(), probs.end()));
-
-      if (semantics == 0)
-        state = State::FREE;
-      else
-        state = State::OCCUPIED;
-    }
 }
