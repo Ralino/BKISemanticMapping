@@ -27,7 +27,7 @@ namespace semantic_bki {
         /// Types used internally
         typedef std::vector<point3f> PointCloud;
         typedef std::pair<point3f, float> GPPointType;
-        typedef std::vector<GPPointType> GPPointCloud;
+        typedef PCLPointCloud GPPointCloud;
         typedef RTree<GPPointType *, float, 3, float> MyRTree;
 
     public:
@@ -87,10 +87,11 @@ namespace semantic_bki {
                                float free_res = 2.0f,
                                float max_range = -1);
 
-        //void insert_training_data(const GPPointCloud &cloud);
+        void insert_pointcloud_kdtree(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,
+                                      float free_res = 2.0f,
+                                      float max_range = -1);
 
-        /// Get bounding box of the map.
-        void get_bbox(point3f &lim_min, point3f &lim_max) const;
+        //void insert_training_data(const GPPointCloud &cloud);
 
         class RayCaster {
         public:

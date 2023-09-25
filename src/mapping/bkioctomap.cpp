@@ -1,6 +1,7 @@
 #include <random>
 #include <algorithm>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 #include "bkioctomap.h"
 #include "bki.h"
@@ -115,9 +116,9 @@ namespace semantic_bki {
         ////////// Training /////////////////////////////
         /////////////////////////////////////////////////
         std::unordered_map<BlockHashKey, SemanticBKI3f *> bgk_arr;
-        for (auto point_it = xy.cbegin(); point_it != xy.cend(); ++point_it) {
-            auto pos = point_it->first;
-            auto label = point_it->second;
+        for (auto point_it = xy.begin(); point_it != xy.end(); ++point_it) {
+            point3f pos(point_it->x, point_it->y, point_it->z);
+            auto label = point_it->label;
             BlockHashKey key = block_to_hash_key(pos);
 
             SemanticBKI3f *bgk;
@@ -223,9 +224,9 @@ namespace semantic_bki {
         /////////////////////////////////////////////////
  
         std::unordered_map<BlockHashKey, SemanticBKI3f *> bgk_arr;
-        for (auto point_it = xy.cbegin(); point_it != xy.cend(); ++point_it) {
-            auto pos = point_it->first;
-            auto label = point_it->second;
+        for (auto point_it = xy.begin(); point_it != xy.end(); ++point_it) {
+            point3f pos(point_it->x, point_it->y, point_it->z);
+            auto label = point_it->label;
             BlockHashKey key = block_to_hash_key(pos);
 
             SemanticBKI3f *bgk;
@@ -305,18 +306,58 @@ namespace semantic_bki {
             delete it->second;
     }
 
-    void SemanticBKIOctoMap::get_bbox(point3f &lim_min, point3f &lim_max) const {
-        lim_min = point3f(0, 0, 0);
-        lim_max = point3f(0, 0, 0);
+    void SemanticBKIOctoMap::insert_pointcloud_kdtree(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,
+                                      float free_res, float max_range) {
+        GPPointCloud xy;
+        get_training_data(cloud, origin, ds_resolution, free_res, max_range, xy);
 
-        GPPointCloud centers;
-        for (auto it = block_arr.cbegin(); it != block_arr.cend(); ++it) {
-            centers.emplace_back(it->second->get_center(), 1);
-        }
-        if (centers.size() > 0) {
-            bbox(centers, lim_min, lim_max);
-            lim_min -= point3f(block_size, block_size, block_size) * 0.5;
-            lim_max += point3f(block_size, block_size, block_size) * 0.5;
+        // disable destructor, ownership is not managed by shared_ptr
+        auto cloud_ptr = pcl::shared_ptr<semantic_bki::PCLPointCloud>(
+            &xy, [](semantic_bki::PCLPointCloud *p) { (void)p; });
+        pcl::KdTreeFLANN<semantic_bki::PCLPointType> kdtree;
+        kdtree.setInputCloud(cloud_ptr);
+
+        point3f lim_min, lim_max;
+        bbox(xy, lim_min, lim_max);
+
+        // all blocks
+        vector<BlockHashKey> blocks;
+        get_blocks_in_bbox(lim_min, lim_max, blocks);
+
+        const SemanticBKI3f::Params params = {
+            SemanticOcTreeNode::ell,
+            SemanticOcTreeNode::sf2,
+            SemanticOcTreeNode::num_class
+        };
+
+#pragma omp parallel for schedule(dynamic)
+        for (BlockHashKey key : blocks) {
+            PCLPointType block_center;
+            auto center = hash_key_to_block(key);
+            block_center.x = center.x();
+            block_center.y = center.y();
+            block_center.z = center.z();
+
+            Block *block;
+#pragma omp critical
+            {
+                if (block_arr.find(key) == block_arr.end()) {
+                    block_arr.emplace(key, new Block(hash_key_to_block(key)));
+                }
+                block = block_arr[key];
+            };
+
+            std::vector<int> point_indices;
+            std::vector<float> distances;
+            kdtree.radiusSearch(block_center, params.max_distance, point_indices, distances);
+
+            Eigen::VectorXi labels(point_indices.size());
+            for (size_t i = 0; i < point_indices.size(); ++i) {
+                labels(i) = xy[point_indices[i]].label;
+            }
+            Eigen::Map<Eigen::VectorXf> distances_v(distances.data(), distances.size());
+            auto predictions = SemanticBKI3f::new_inner_predict(std::move(distances_v), labels, params);
+            (*block)[block->get_node(0, 0, 0)].update(predictions.array());
         }
     }
 
@@ -344,7 +385,7 @@ namespace semantic_bki {
             }
             
             // copy hits into output xy
-            xy.emplace_back(p, it->label);
+            xy.push_back(*it);
 
             // create free samples from single beam
             PointCloud frees_n;
@@ -368,7 +409,7 @@ namespace semantic_bki {
         const PCLPointCloud& sampled_frees = frees;
 
         for (auto it = sampled_frees.begin(); it != sampled_frees.end(); ++it) {
-            xy.emplace_back(point3f(it->x, it->y, it->z), 0.0f);
+            xy.push_back(*it);
         }
     }
 
@@ -423,10 +464,10 @@ namespace semantic_bki {
     void SemanticBKIOctoMap::bbox(const GPPointCloud &cloud, point3f &lim_min, point3f &lim_max) const {
         assert(cloud.size() > 0);
         vector<float> x, y, z;
-        for (auto it = cloud.cbegin(); it != cloud.cend(); ++it) {
-            x.push_back(it->first.x());
-            y.push_back(it->first.y());
-            z.push_back(it->first.z());
+        for (auto it = cloud.begin(); it != cloud.end(); ++it) {
+            x.push_back(it->x);
+            y.push_back(it->y);
+            z.push_back(it->z);
         }
 
         auto xlim = std::minmax_element(x.cbegin(), x.cend());
@@ -489,7 +530,12 @@ namespace semantic_bki {
 
     bool SemanticBKIOctoMap::search_callback(GPPointType *p, void *arg) {
         GPPointCloud *out = static_cast<GPPointCloud *>(arg);
-        out->push_back(*p);
+        PCLPointType pcl_point;
+        pcl_point.x = p->first.x();
+        pcl_point.y = p->first.y();
+        pcl_point.z = p->first.z();
+        pcl_point.label = static_cast<uint32_t>(p->second);
+        out->push_back(pcl_point);
         return true;
     }
 

@@ -36,12 +36,12 @@ namespace semantic_bki {
             int num_classes;
         };
 
-        Eigen::VectorXf new_dist(const Eigen::MatrixX3f& points, const Eigen::Vector3f origin) {
+        static Eigen::VectorXf new_dist(const Eigen::MatrixX3f& points, const Eigen::Vector3f origin) {
             return (points.rowwise() - origin.transpose()).rowwise().norm();
         }
 
-        Eigen::VectorXf new_inner_predict(Eigen::VectorXf &&distances,
-                const Eigen::VectorXi &labels, Params params) {
+        static Eigen::VectorXf new_inner_predict(Eigen::VectorXf &&distances,
+                const Eigen::VectorXi &labels, const Params& params) {
             assert(distances.size() == labels.size());
 
             distances /= params.max_distance;

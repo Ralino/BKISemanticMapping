@@ -44,7 +44,7 @@ void OnlineMapper::labeledPointCloudCallback(
                                      m_params.free_resolution,
                                      m_params.max_range);
   } else {
-    m_bki_map->insert_pointcloud(m_cloud, origin, m_params.ds_resolution,
+    m_bki_map->insert_pointcloud_kdtree(m_cloud, origin, m_params.ds_resolution,
                                  m_params.free_resolution, m_params.max_range);
   }
 }
