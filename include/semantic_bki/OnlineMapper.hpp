@@ -17,16 +17,17 @@ public:
     int num_class = 35;
     float sf2 = 10;
     float ell = 0.3;
-    float prior = 0.001;
+    float prior = 0.001; // no effect, because positive definite and max
     float var_thresh = 0.09;     // unused
     float free_thresh = 0.3;     // unused
     float occupied_thresh = 0.7; // unused
 
-    float ds_resolution = -1.0; // disabled
     float free_resolution = 2.; // beam traversal for points of class empty.
     float max_range = 10.;
 
+    std::vector<uint32_t> class_mapping;
     bool csm = false;
+    bool kdtree = false;
   };
 
   OnlineMapper(const Params &params,

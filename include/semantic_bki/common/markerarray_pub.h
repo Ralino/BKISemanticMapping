@@ -203,92 +203,87 @@ namespace semantic_bki {
           color.g = 64.0 / 255;
           color.b = 20.0 / 255;
           break;
-        case 3:
+        case 2:
           color.r = 0.0 / 255;
           color.g = 102.0 / 255;
           color.b = 0.0 / 255;
           break;
-        case 4:
+        case 3:
           color.r = 0.0 / 255;
           color.g = 255.0 / 255;
           color.b = 0.0 / 255;
           break;
-        case 5:
+        case 4:
           color.r = 0.0 / 255;
           color.g = 153.0 / 255;
           color.b = 153.0 / 255;
           break;
-        case 6:
+        case 5:
           color.r = 0.0 / 255;
           color.g = 128.0 / 255;
           color.b = 255.0 / 255;
           break;
-        case 7:
-          color.r = 0.0 / 255;
-          color.g = 0.0 / 255;
-          color.b = 255.0 / 255;
-          break;
-        case 8:
+        case 6:
           color.r = 255.0 / 255;
           color.g = 255.0 / 255;
           color.b = 0.0 / 255;
           break;
-        case 9:
+        case 7:
           color.r = 255.0 / 255;
           color.g = 0.0 / 255;
           color.b = 127.0 / 255;
           break;
-        case 10:
+        case 8:
           color.r = 64.0 / 255;
           color.g = 64.0 / 255;
           color.b = 64.0 / 255;
           break;
-        case 12:
+        case 9:
           color.r = 255.0 / 255;
           color.g = 0.0 / 255;
           color.b = 0.0 / 255;
           break;
-        case 15:
+        case 10:
           color.r = 102.0 / 255;
           color.g = 0.0 / 255;
           color.b = 0.0 / 255;
           break;
-        case 17:
+        case 11:
           color.r = 204.0 / 255;
           color.g = 153.0 / 255;
           color.b = 255.0 / 255;
           break;
-        case 18:
+        case 12:
           color.r = 102.0 / 255;
           color.g = 0.0 / 255;
           color.b = 204.0 / 255;
           break;
-        case 19:
+        case 13:
           color.r = 255.0 / 255;
           color.g = 153.0 / 255;
           color.b = 204.0 / 255;
           break;
-        case 23:
+        case 14:
           color.r = 170.0 / 255;
           color.g = 170.0 / 255;
           color.b = 170.0 / 255;
           break;
-        case 27:
+        case 15:
           color.r = 41.0 / 255;
           color.g = 121.0 / 255;
           color.b = 255.0 / 255;
           break;
-        case 31:
+        case 16:
           color.r = 134.0 / 255;
           color.g = 255.0 / 255;
           color.b = 239.0 / 255;
           break;
-        case 33:
+        case 17:
           color.r = 99.0 / 255;
           color.g = 66.0 / 255;
           color.b = 34.0 / 255;
           break;
-        case 34:
+        case 18:
           color.r = 110.0 / 255;
           color.g = 22.0 / 255;
           color.b = 138.0 / 255;

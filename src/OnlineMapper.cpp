@@ -10,7 +10,7 @@ OnlineMapper::OnlineMapper(const OnlineMapper::Params &params,
                            std::shared_ptr<tf2_ros::Buffer> tf_buffer)
     : m_params(params), m_tf_buffer(tf_buffer) {
   std::cout << "num_class: " << m_params.num_class << std::endl;
-  std::cout << "sizeof block: " << sizeof(semantic_bki::Block) << std::endl;
+  std::cout << "method: " << (m_params.csm? "csm" : (m_params.kdtree? "kdtree" : "bki")) << std::endl;
 
   m_bki_map = std::make_unique<semantic_bki::SemanticBKIOctoMap>(
       m_params.resolution, m_params.block_depth, m_params.num_class,
@@ -18,6 +18,12 @@ OnlineMapper::OnlineMapper(const OnlineMapper::Params &params,
       m_params.free_thresh, m_params.occupied_thresh);
   m_vis_pub =
       std::make_unique<semantic_bki::MarkerArrayPub>(m_params.resolution);
+
+  if (!m_params.class_mapping.empty()) {
+    m_bki_map->set_class_mapping(m_params.class_mapping);
+  } else {
+    ROS_WARN("No class mapping given, using default 1 to 1 mapping");
+  }
 }
 
 OnlineMapper::~OnlineMapper() = default;
@@ -40,12 +46,17 @@ void OnlineMapper::labeledPointCloudCallback(
       static_cast<float>(pc_pos.transform.translation.y),
       static_cast<float>(pc_pos.transform.translation.z)};
   if (m_params.csm) {
-    m_bki_map->insert_pointcloud_csm(m_cloud, origin, m_params.ds_resolution,
+    m_bki_map->insert_pointcloud_csm(m_cloud, origin, -1.f,
                                      m_params.free_resolution,
                                      m_params.max_range);
   } else {
-    m_bki_map->insert_pointcloud_kdtree(m_cloud, origin, m_params.ds_resolution,
-                                 m_params.free_resolution, m_params.max_range);
+    if (m_params.kdtree) {
+      m_bki_map->insert_pointcloud_kdtree(m_cloud, origin, -1.f,
+                                   m_params.free_resolution, m_params.max_range);
+    } else {
+      m_bki_map->insert_pointcloud(m_cloud, origin, -1.f,
+                                   m_params.free_resolution, m_params.max_range);
+    }
   }
 }
 

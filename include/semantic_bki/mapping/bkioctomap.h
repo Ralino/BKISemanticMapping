@@ -70,6 +70,9 @@ namespace semantic_bki {
         /// Get block max depth.
         inline float get_block_depth() const { return block_depth; }
 
+        /// Sets a class mapping.
+        void set_class_mapping(const std::vector<uint32_t>& class_mapping);
+
         /*
          * @brief Insert PCL PointCloud into BGKOctoMaps.
          * @param cloud one scan in PCLPointCloud format
@@ -384,6 +387,8 @@ namespace semantic_bki {
         unsigned short block_depth;
         std::unordered_map<BlockHashKey, Block *> block_arr;
         MyRTree rtree;
+
+        std::vector<uint32_t> m_class_mapping;
     };
 
 }

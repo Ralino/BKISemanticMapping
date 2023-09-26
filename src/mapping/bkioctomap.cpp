@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <ros/console.h>
 
 #include "bkioctomap.h"
 #include "bki.h"
@@ -62,6 +63,11 @@ namespace semantic_bki {
         SemanticOcTreeNode::var_thresh = var_thresh;
         SemanticOcTreeNode::free_thresh = free_thresh;
         SemanticOcTreeNode::occupied_thresh = occupied_thresh;
+
+        m_class_mapping.reserve(num_class);
+        for (int i = 0; i < num_class; ++i) {
+            m_class_mapping.push_back(i);
+        }
     }
 
     SemanticBKIOctoMap::~SemanticBKIOctoMap() {
@@ -86,6 +92,15 @@ namespace semantic_bki {
         this->block_size = (float) pow(2, block_depth - 1) * resolution;
         Block::size = this->block_size;
         Block::key_loc_map = init_key_loc_map(resolution, block_depth);
+    }
+
+    void SemanticBKIOctoMap::set_class_mapping(
+        const std::vector<uint32_t> &class_mapping) {
+        if (class_mapping.empty() || class_mapping[0] != 0) {
+            ROS_WARN("Empty class '0' cannot be remapped to another class.");
+        } else {
+            m_class_mapping = class_mapping;
+        }
     }
 
     void SemanticBKIOctoMap::insert_pointcloud_csm(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,
@@ -386,6 +401,25 @@ namespace semantic_bki {
             
             // copy hits into output xy
             xy.push_back(*it);
+
+            // class mapping
+            if (xy.back().label < m_class_mapping.size()) {
+                if (m_class_mapping[xy.back().label] >=
+                    static_cast<uint32_t>(SemanticOcTreeNode::num_class)) {
+                    ROS_WARN_STREAM_THROTTLE(
+                        0.1f,
+                        "got a label "
+                            << xy.back().label
+                            << " which will be mapped out of classes range");
+                }
+                xy.back().label = m_class_mapping[xy.back().label];
+            } else {
+                ROS_WARN_STREAM_THROTTLE(
+                    1.f, "label " << xy.back().label
+                                  << " out of range of class mapping, mapped to "
+                                     "num_class");
+                xy.back().label = SemanticOcTreeNode::num_class;
+            }
 
             // create free samples from single beam
             PointCloud frees_n;

@@ -1,0 +1,40 @@
+
+resolution: 0.3
+block_depth: 1
+# block_size = resolution * 2^(block_depth - 1) (octree depth)
+num_class: 19
+sf2: 10
+ell: 0.3
+prior: 0.001 # no effect
+var_thresh: 0.09 # currently unused
+free_thresh: 0.3 # currently unused
+occupied_thresh: 0.7 # currently unused
+
+free_resolution: 2.
+max_range: 10.
+
+class_mapping: [
+  0, # void
+  1, # dirt
+  -1, 2, # grass
+  3, # tree
+  4, # pole
+  5, # water
+  0, # sky (mapped to void)
+  6, # vehicle
+  7, # object
+  8, # asphalt
+  -1,  9, # building
+  -1,  -1,  10, # log
+  -1, 11, # person
+  12, # fence
+  13, # bush
+  -1, -1, -1, 14, # concrete
+  -1, -1, -1, 15, # barrier
+  -1, -1, -1, 16, # puddle
+  -1, 17, # mud
+  18 # rubble
+]
+
+csm: false
+kdtree: false
