@@ -37,6 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(yaml-cpp REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -124,6 +125,7 @@ include_directories(
   include/semantic_bki
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIR}
 )
 
 ## Declare a cpp library
@@ -196,12 +198,11 @@ target_link_libraries(semantickitti_node
 
 target_link_libraries(online_mapping_node
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
 )
 
 target_link_libraries(benchmark
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
 )
 
 #############

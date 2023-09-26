@@ -1,16 +1,21 @@
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <vector>
 
+#include <unistd.h>
+#include <stdio.h>
+#include <yaml-cpp/yaml.h>
+
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
+#include <tf2_msgs/TFMessage.h>
 #include <tf2_ros/buffer.h>
 
 #include "OnlineMapper.hpp"
-#include "tf2_msgs/TFMessage.h"
 
 // #define VISUALIZE
 
@@ -21,9 +26,11 @@
 static constexpr int SKIP_FRAMES = 200;
 static constexpr int NUM_FRAMES = 200;
 
-class MultiViewIterator {
+namespace fs = std::filesystem;
+
+class MultiBagIterator {
 public:
-  MultiViewIterator(const std::vector<std::unique_ptr<rosbag::Bag>> &bags,
+  MultiBagIterator(const std::vector<std::unique_ptr<rosbag::Bag>> &bags,
                     const std::string &topic_name) {
     for (const auto &bag : bags) {
       auto view_ptr =
@@ -40,7 +47,7 @@ public:
     return m_iterators[m_current_index] == m_views[m_current_index]->end();
   }
 
-  MultiViewIterator &operator++() {
+  MultiBagIterator &operator++() {
     m_total_read_msgs++;
     m_iterators[m_current_index]++;
     setIndexToEarliest();
@@ -71,8 +78,60 @@ private:
   size_t m_total_read_msgs = 0;
 };
 
+void updateParamsFromYaml(YAML::Node &&config, OnlineMapper::Params &params) {
+    params.resolution = config["resolution"] ? config["resolution"].as<float>()
+                                             : params.resolution;
+    params.block_depth = config["block_depth"] ? config["block_depth"].as<int>()
+                                               : params.block_depth;
+    params.num_class =
+        config["num_class"] ? config["num_class"].as<int>() : params.num_class;
+    params.sf2 = config["sf2"] ? config["sf2"].as<float>() : params.sf2;
+    params.ell = config["ell"] ? config["ell"].as<float>() : params.ell;
+    params.prior = config["prior"] ? config["prior"].as<float>() : params.prior;
+    params.var_thresh = config["var_thresh"] ? config["var_thresh"].as<float>()
+                                             : params.var_thresh;
+    params.free_thresh = config["free_thresh"]
+                             ? config["free_thresh"].as<float>()
+                             : params.free_thresh;
+    params.occupied_thresh = config["occupied_thresh"]
+                                 ? config["occupied_thresh"].as<float>()
+                                 : params.occupied_thresh;
+
+    params.free_resolution = config["free_resolution"]
+                                 ? config["free_resolution"].as<float>()
+                                 : params.free_resolution;
+    params.max_range = config["max_range"] ? config["max_range"].as<float>()
+                                           : params.max_range;
+    params.csm = config["csm"] ? config["csm"].as<bool>() : params.csm;
+    params.kdtree =
+        config["kdtree"] ? config["kdtree"].as<bool>() : params.kdtree;
+
+    if (config["class_mapping"]) {
+      params.class_mapping.clear();
+      for (const auto &entry : config["class_mapping"]) {
+        int label = entry.as<int>();
+        if (label < 0) {
+          // disable negative ones and log a warning if they appear
+          params.class_mapping.push_back(params.num_class);
+        } else {
+          params.class_mapping.push_back(static_cast<uint32_t>(label));
+        }
+      }
+    }
+}
+
+OnlineMapper::Params parseYamlFiles(const std::vector<std::string> &filenames) {
+  OnlineMapper::Params params;
+  for (const auto &filename : filenames) {
+    updateParamsFromYaml(YAML::LoadFile(filename), params);
+  }
+
+  return params;
+}
+
 void printHelp(const char *prog_name) {
-  std::cout << "Usage: " << prog_name << " <bagfile.bag>..." << std::endl;
+  std::cout << "Usage: " << prog_name << " <bagfile.bag>... [<config.yaml>...]"
+            << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -90,16 +149,26 @@ int main(int argc, char **argv) {
 #endif
 
   std::vector<std::unique_ptr<rosbag::Bag>> bags;
+  std::vector<std::string> config_files;
 
   for (int i = 1; i < argc; ++i) {
-    std::cout << "opening bag '" << argv[i] << "'... " << std::endl;
-    auto bag_ptr = std::make_unique<rosbag::Bag>();
-    bags.emplace_back(std::move(bag_ptr));
-    try {
-      bags.back()->open(argv[i], rosbag::bagmode::Read);
-    } catch (rosbag::BagException e) {
-      std::cout << "Failed to open '" << argv[i]
-                << "' as a bag file: " << e.what() << std::endl;
+    fs::path filename = argv[i];
+    if (filename.extension().string() == ".bag") {
+      std::cout << "opening bag '" << argv[i] << "'... " << std::endl;
+      auto bag_ptr = std::make_unique<rosbag::Bag>();
+      bags.emplace_back(std::move(bag_ptr));
+      try {
+        bags.back()->open(argv[i], rosbag::bagmode::Read);
+      } catch (rosbag::BagException e) {
+        std::cout << "Failed to open '" << argv[i]
+                  << "' as a bag file: " << e.what() << std::endl;
+        return 1;
+      }
+    } else if (filename.extension().string() == ".yaml" ||
+               filename.extension().string() == ".yml") {
+      config_files.push_back(filename.string());
+    } else {
+      std::cout << "Invalid argument: " << argv[i] << std::endl;
       printHelp(argv[0]);
       return 1;
     }
@@ -107,7 +176,7 @@ int main(int argc, char **argv) {
 
   auto tf_buffer = std::make_shared<tf2_ros::Buffer>();
 
-  for (MultiViewIterator tf_static_iterator(bags, "/tf_static");
+  for (MultiBagIterator tf_static_iterator(bags, "/tf_static");
        !tf_static_iterator.atEnd(); ++tf_static_iterator) {
     auto tf_msg_ptr = tf_static_iterator->instantiate<tf2_msgs::TFMessage>();
     if (tf_msg_ptr) {
@@ -117,15 +186,19 @@ int main(int argc, char **argv) {
     }
   }
 
-  MultiViewIterator pc_msg_iterator(bags, "/ground_truth/xyzl");
-  MultiViewIterator tf_msg_iterator(bags, "/tf");
+  MultiBagIterator pc_msg_iterator(bags, "/ground_truth/xyzl");
+  MultiBagIterator tf_msg_iterator(bags, "/tf");
 
-  OnlineMapper::Params params;
+  auto params = parseYamlFiles(config_files);
+  if (!isatty(fileno(stdin))) {
+    updateParamsFromYaml(YAML::Load(std::cin), params);
+  }
   OnlineMapper mapper(params, tf_buffer);
 
   int frame_number;
   std::chrono::steady_clock::time_point start_time;
-  for (frame_number = 0; frame_number < SKIP_FRAMES + NUM_FRAMES; ++frame_number) {
+  for (frame_number = 0; frame_number < SKIP_FRAMES + NUM_FRAMES;
+       ++frame_number) {
     if (pc_msg_iterator.atEnd()) {
       frame_number++;
       break;
@@ -168,6 +241,6 @@ int main(int argc, char **argv) {
 
   std::cout << "Total runtime (" << frame_number - SKIP_FRAMES
             << " frames): " << delta.count() << "ms" << std::endl;
-  std::cout << "Per frame: " << delta.count() / (frame_number - SKIP_FRAMES) << "ms"
-            << std::endl;
+  std::cout << "Per frame: " << delta.count() / (frame_number - SKIP_FRAMES)
+            << "ms" << std::endl;
 }
