@@ -3,9 +3,9 @@
 #include <unordered_map>
 #include <array>
 
-#include "point3f.h"
-#include "bkioctree_node.h"
-#include "bkioctree.h"
+#include "semantic_bki/common/point3f.h"
+#include "semantic_bki/mapping/bkioctree_node.h"
+#include "semantic_bki/mapping/bkioctree.h"
 
 #define ALL_NEIGHBORS
 

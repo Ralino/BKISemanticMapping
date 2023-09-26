@@ -1,4 +1,4 @@
-#include "point3f.h"
+#include "semantic_bki/common/point3f.h"
 #include <cassert>
 #include <math.h>
 #include <string.h>

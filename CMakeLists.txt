@@ -20,19 +20,24 @@ add_definitions(-DOPENMP)
 
 #add_definitions(-DPREDICT)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+# catkin dependencies for the library
+set(CATKIN_DEPENDENCIES
         geometry_msgs
         sensor_msgs
         visualization_msgs
         nav_msgs
         pcl_ros
         roscpp
-        tf_conversions
         tf2
         tf2_ros
+)
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  ${CATKIN_DEPENDENCIES}
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -106,8 +111,9 @@ find_package(yaml-cpp REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+  CATKIN_DEPENDS ${CATKIN_DEPENDENCIES}
   INCLUDE_DIRS include
-#  CATKIN_DEPENDS geometry_msgs pcl_ros roscpp
+  LIBRARIES semantic_bki
 #  DEPENDS system_lib
 )
 
@@ -119,19 +125,11 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  include/semantic_bki/common
-  include/semantic_bki/mapping
-  include/semantic_bki/dataset_devkit
-  include/semantic_bki
+  include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
 )
-
-## Declare a cpp library
-# add_library(bgkoctomap
-#   src/${PROJECT_NAME}/bgkoctomap.cpp
-# )
 
 # Common source files
 set(COMMON_SOURCE_FILES src/common/point3f)
@@ -143,37 +141,32 @@ set(MAPPING_SOURCE_FILES
     src/mapping/bkioctree_node.cpp
     src/mapping/bkioctree.cpp)
 
-
-add_executable(toy_example_node
+## Declare a cpp library
+add_library(semantic_bki
   ${MAPPING_SOURCE_FILES}
   ${COMMON_SOURCE_FILES}
+  src/OnlineMapper.cpp
+)
+
+
+add_executable(toy_example_node
   src/toy_example_node.cpp
 )
 
 add_executable(kitti_node
-  ${MAPPING_SOURCE_FILES}
-  ${COMMON_SOURCE_FILES}
   src/kitti_node.cpp
 )
 
 add_executable(semantickitti_node
-  ${MAPPING_SOURCE_FILES}
-  ${COMMON_SOURCE_FILES}
   src/semantickitti_node.cpp
 )
 
 add_executable(online_mapping_node
-  ${MAPPING_SOURCE_FILES}
-  ${COMMON_SOURCE_FILES}
   src/online_mapping_node.cpp
-  src/OnlineMapper.cpp
 )
 
 add_executable(benchmark
-  ${MAPPING_SOURCE_FILES}
-  ${COMMON_SOURCE_FILES}
   src/benchmark.cpp
-  src/OnlineMapper.cpp
 )
 
 ## Add cmake target dependencies of the executable/library
@@ -182,27 +175,36 @@ add_executable(benchmark
 
 ## Specify libraries to link a library or executable target against
 
+target_link_libraries(semantic_bki
+  ${catkin_LIBRARIES}
+)
+
 target_link_libraries(toy_example_node
   ${catkin_LIBRARIES}
+  semantic_bki
 )
 
 target_link_libraries(kitti_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  semantic_bki
 )
 
 target_link_libraries(semantickitti_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  semantic_bki
 )
 
 target_link_libraries(online_mapping_node
   ${catkin_LIBRARIES}
+  semantic_bki
 )
 
 target_link_libraries(benchmark
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
+  semantic_bki
 )
 
 #############
@@ -220,18 +222,15 @@ target_link_libraries(benchmark
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS bgkoctomap BGKOctoMap_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS semantic_bki
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 
-#include "bkioctree_node.h"
+#include "semantic_bki/mapping/bkioctree_node.h"
 
 namespace semantic_bki {
 

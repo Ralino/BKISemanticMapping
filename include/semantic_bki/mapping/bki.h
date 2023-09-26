@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bkioctomap.h"
+#include "semantic_bki/mapping/bkioctomap.h"
 
 static const float M_PI_f = M_PI;
 

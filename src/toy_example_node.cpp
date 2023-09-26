@@ -1,8 +1,8 @@
 #include <string>
 #include <iostream>
 #include <ros/ros.h>
-#include "bkioctomap.h"
-#include "markerarray_pub.h"
+#include "semantic_bki/mapping/bkioctomap.h"
+#include "semantic_bki/common/markerarray_pub.h"
 
 void load_pcd(std::string filename, semantic_bki::point3f &origin, semantic_bki::PCLPointCloud &cloud) {
     pcl::PCLPointCloud2 cloud2;

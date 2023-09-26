@@ -4,8 +4,8 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <ros/console.h>
 
-#include "bkioctomap.h"
-#include "bki.h"
+#include "semantic_bki/mapping/bkioctomap.h"
+#include "semantic_bki/mapping/bki.h"
 
 using std::vector;
 

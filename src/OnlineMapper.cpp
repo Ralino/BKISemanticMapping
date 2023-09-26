@@ -1,6 +1,6 @@
-#include "OnlineMapper.hpp"
+#include "semantic_bki/OnlineMapper.hpp"
 
-#include "markerarray_pub.h"
+#include "semantic_bki/common/markerarray_pub.h"
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/impl/transforms.hpp>

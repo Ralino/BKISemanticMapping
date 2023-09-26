@@ -3,8 +3,8 @@
 #include <stack>
 #include <vector>
 
-#include "point3f.h"
-#include "bkioctree_node.h"
+#include "semantic_bki/common/point3f.h"
+#include "semantic_bki/mapping/bkioctree_node.h"
 
 namespace semantic_bki {
 

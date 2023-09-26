@@ -2,7 +2,7 @@
 #include <iostream>
 #include <ros/ros.h>
 
-#include "semantickitti_util.h"
+#include "semantic_bki/dataset_devkit/semantickitti_util.h"
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "semantickitti_node");

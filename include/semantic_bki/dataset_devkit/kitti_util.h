@@ -7,7 +7,7 @@
 #include <opencv2/core/core.hpp>
 #include <pcl/common/transforms.h>
 
-#include "point3f.h"
+#include "semantic_bki/common/point3f.h"
 
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixXf_row;
 

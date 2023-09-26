@@ -2,9 +2,9 @@
 #include <iostream>
 #include <ros/ros.h>
 
-#include "bkioctomap.h"
-#include "markerarray_pub.h"
-#include "kitti_util.h"
+#include "semantic_bki/mapping/bkioctomap.h"
+#include "semantic_bki/common/markerarray_pub.h"
+#include "semantic_bki/dataset_devkit/kitti_util.h"
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "kitti_node");

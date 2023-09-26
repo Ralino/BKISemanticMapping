@@ -15,7 +15,7 @@
 #include <tf2_msgs/TFMessage.h>
 #include <tf2_ros/buffer.h>
 
-#include "OnlineMapper.hpp"
+#include "semantic_bki/OnlineMapper.hpp"
 
 // #define VISUALIZE
 

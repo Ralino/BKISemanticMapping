@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bkioctomap.h"
+#include "semantic_bki/mapping/bkioctomap.h"
 
 #include <pcl_ros/point_cloud.h>
 #include <tf2_ros/buffer.h>

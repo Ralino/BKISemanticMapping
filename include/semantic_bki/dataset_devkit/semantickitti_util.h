@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bkioctomap.h"
-#include "markerarray_pub.h"
+#include "semantic_bki/mapping/bkioctomap.h"
+#include "semantic_bki/common/markerarray_pub.h"
 #include <fstream>
 
 #include <ros/ros.h>

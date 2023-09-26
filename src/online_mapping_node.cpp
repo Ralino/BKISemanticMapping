@@ -2,7 +2,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include "OnlineMapper.hpp"
+#include "semantic_bki/OnlineMapper.hpp"
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "online_mapping_node");

@@ -4,9 +4,9 @@
 #include <vector>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include "rtree.h"
-#include "bkiblock.h"
-#include "bkioctree_node.h"
+#include "semantic_bki/common/rtree.h"
+#include "semantic_bki/mapping/bkiblock.h"
+#include "semantic_bki/mapping/bkioctree_node.h"
 
 namespace semantic_bki {
 

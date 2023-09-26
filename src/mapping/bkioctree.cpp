@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "bkioctree.h"
+#include "semantic_bki/mapping/bkioctree.h"
 
 namespace semantic_bki {
 
