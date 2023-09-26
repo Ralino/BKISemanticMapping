@@ -376,7 +376,7 @@ namespace semantic_bki {
 
         /// Sample free training points along sensor beams.
         void beam_sample(const point3f &hits, const point3f &origin, PointCloud &frees,
-                         float free_resolution) const;
+                         float free_resolution, float max_range) const;
 
         /// Get training data from one sensor scan.
         void get_training_data(const PCLPointCloud &cloud, const point3f &origin, float ds_resolution,

@@ -393,6 +393,22 @@ namespace semantic_bki {
         xy.clear();
         for (auto it = sampled_hits.begin(); it != sampled_hits.end(); ++it) {
             point3f p(it->x, it->y, it->z);
+
+            // create free samples from single beam
+            PointCloud frees_n;
+            beam_sample(p, origin, frees_n, free_resolution, max_range);
+
+            // add free samples to list of all free samples
+            for (auto p = frees_n.begin(); p != frees_n.end(); ++p) {
+                PCLPointType p_free = PCLPointType();
+                p_free.x = p->x();
+                p_free.y = p->y();
+                p_free.z = p->z();
+                p_free.label = 0;
+                frees.push_back(p_free);
+                frees.width++;
+            }
+
             if (max_range > 0) {
                 double l = (p - origin).norm();
                 if (l > max_range)
@@ -419,21 +435,6 @@ namespace semantic_bki {
                                   << " out of range of class mapping, mapped to "
                                      "num_class");
                 xy.back().label = SemanticOcTreeNode::num_class;
-            }
-
-            // create free samples from single beam
-            PointCloud frees_n;
-            beam_sample(p, origin, frees_n, free_resolution);
-
-            // add free samples to list of all free samples
-            for (auto p = frees_n.begin(); p != frees_n.end(); ++p) {
-                PCLPointType p_free = PCLPointType();
-                p_free.x = p->x();
-                p_free.y = p->y();
-                p_free.z = p->z();
-                p_free.label = 0;
-                frees.push_back(p_free);
-                frees.width++;
             }
         }
 
@@ -462,7 +463,7 @@ namespace semantic_bki {
     }
 
     void SemanticBKIOctoMap::beam_sample(const point3f &hit, const point3f &origin, PointCloud &frees,
-                                float free_resolution) const {
+                                float free_resolution, float max_range) const {
         static std::mt19937 rand_gen;
         std::uniform_real_distribution<float> dist(0.0, free_resolution);
 
@@ -483,12 +484,10 @@ namespace semantic_bki {
         float nz = (z - z0) / l;
 
         float d = dist(rand_gen);
-        while (d < l) {
+        while (d < l && d < max_range) {
             frees.emplace_back(x0 + nx * d, y0 + ny * d, z0 + nz * d);
             d += free_resolution;
         }
-        if (l > free_resolution)
-            frees.emplace_back(x0 + nx * (l - free_resolution), y0 + ny * (l - free_resolution), z0 + nz * (l - free_resolution));
     }
 
     /*
