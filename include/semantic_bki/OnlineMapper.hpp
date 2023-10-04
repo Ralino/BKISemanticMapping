@@ -12,6 +12,8 @@ class MarkerArrayPub;
 class OnlineMapper {
 public:
   struct Params {
+    std::string map_frame = "map";
+
     float resolution = 0.3;
     int block_depth = 1;
     int num_class = 35;

@@ -33,10 +33,11 @@ void OnlineMapper::labeledPointCloudCallback(
   auto time = pcl_conversions::fromPCL(msg.header.stamp);
   geometry_msgs::TransformStamped pc_pos;
   try {
-    pc_pos = m_tf_buffer->lookupTransform("map", msg.header.frame_id, time);
+    pc_pos = m_tf_buffer->lookupTransform(m_params.map_frame,
+                                          msg.header.frame_id, time);
   } catch (tf2::TransformException &ex) {
-    ROS_WARN_STREAM(
-        "Failed to get transform between lidar and map: " << ex.what());
+    ROS_WARN_STREAM("Failed to get transform between lidar and "
+                    << m_params.map_frame << ": " << ex.what());
     return;
   }
 
