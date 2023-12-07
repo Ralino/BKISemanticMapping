@@ -158,7 +158,7 @@ namespace semantic_bki {
                     current_p.x() += x_inc * resolution;
                     xy_error -= dy;
                     xz_error -= dz;
-                    if (x >= lim || x < 0) {
+                    if (x >= lim) {
                         block_lim.x() += x_inc * block_size;
                         _block_key = block_to_hash_key(block_lim);
                         block = map->search(_block_key);
@@ -169,7 +169,7 @@ namespace semantic_bki {
                     current_p.y() += y_inc * resolution;
                     xy_error += dx;
                     yz_error -= dz;
-                    if (y >= lim || y < 0) {
+                    if (y >= lim) {
                         block_lim.y() += y_inc * block_size;
                         _block_key = block_to_hash_key(block_lim);
                         block = map->search(_block_key);
@@ -180,7 +180,7 @@ namespace semantic_bki {
                     current_p.z() += z_inc * resolution;
                     xz_error += dx;
                     yz_error += dy;
-                    if (z >= lim || z < 0) {
+                    if (z >= lim) {
                         block_lim.z() += z_inc * block_size;
                         _block_key = block_to_hash_key(block_lim);
                         block = map->search(_block_key);
@@ -192,13 +192,13 @@ namespace semantic_bki {
                     n -= 2;
                     current_p.x() += x_inc * resolution;
                     current_p.y() += y_inc * resolution;
-                    if (x >= lim || x < 0) {
+                    if (x >= lim) {
                         block_lim.x() += x_inc * block_size;
                         _block_key = block_to_hash_key(block_lim);
                         block = map->search(_block_key);
                         x = x_inc > 0 ? 0 : lim - 1;
                     }
-                    if (y >= lim || y < 0) {
+                    if (y >= lim) {
                         block_lim.y() += y_inc * block_size;
                         _block_key = block_to_hash_key(block_lim);
                         block = map->search(_block_key);
@@ -242,7 +242,7 @@ namespace semantic_bki {
             // just for initializing end iterator
             LeafIterator(std::unordered_map<BlockHashKey, Block *>::const_iterator block_it,
                          SemanticOcTree::LeafIterator leaf_it)
-                    : block_it(block_it), leaf_it(leaf_it), end_block(block_it), end_leaf(leaf_it) { }
+                    : block_it(block_it), end_block(block_it), leaf_it(leaf_it), end_leaf(leaf_it) { }
 
             bool operator==(const LeafIterator &other) {
                 return (block_it == other.block_it) && (leaf_it == other.leaf_it);
